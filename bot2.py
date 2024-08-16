@@ -144,8 +144,11 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     query = update.callback_query
     await query.answer()
     selected_option = int(query.data)
-    question = questions[context.user_data['current_question']]
+    current_question = context.user_data['current_question']
+    question = questions[current_question]
 
+    context.user_data['answers'].append((question['question'], question['options'][selected_option], question['options'][question['correct_option_id']]))
+    
     if selected_option == question['correct_option_id']:
         context.user_data['score'] += 1
 
@@ -156,8 +159,8 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     else:
         score_percentage = (context.user_data['score'] / len(questions)) * 100
         report = "\n".join(
-            [f"Вопрос: {q['question']}\nВаш ответ: {q['options'][int(a)]}\nПравильный ответ: {q['options'][q['correct_option_id']]}\n"
-             for q, a in zip(questions, context.user_data['answers'])]
+            [f"Вопрос: {q[0]}\nВаш ответ: {q[1]}\nПравильный ответ: {q[2]}\n"
+             for q in context.user_data['answers']]
         )
         await context.bot.send_message(
             chat_id=update.effective_user.id,
