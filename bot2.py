@@ -157,14 +157,21 @@ async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    name = context.user_data.get('name', 'друг')
+    question = questions[context.user_data['current_question']]
+
+    if update.poll_answer.option_ids[0] == question['correct_option_id']:
+        context.user_data['score'] += 1
+
     context.user_data['current_question'] += 1
 
     if context.user_data['current_question'] < len(questions):
         await send_question(update, context)
     else:
+        score_percentage = (context.user_data['score'] / len(questions)) * 100
         await context.bot.send_message(
             chat_id=update.effective_user.id,
-            text=f"Поздравляю, {context.user_data['name']}! Ты завершил викторину! Спасибо за участие! Если хочешь попробовать еще раз, просто отправь команду /start."
+            text=f"Поздравляю, {name}! Ты завершил викторину! \nТвой результат: {score_percentage:.1f} из 100 баллов.\n\nСпасибо за участие! Если хочешь попробовать еще раз, просто отправь команду /start."
         )
 
 def main() -> None:
