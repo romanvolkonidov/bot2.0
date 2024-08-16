@@ -1,0 +1,15 @@
+
+services:
+- type: web
+  name: bot
+  runtime: python
+  repo: https://github.com/romanvolkonidov/bot
+  plan: free
+  envVars:
+  - key: BOT_TOKEN
+    sync: false
+  region: oregon
+  buildCommand: pip install -r requirements.txt
+  startCommand: python bot.py
+  pullRequestPreviewsEnabled: false
+version: "1"
