@@ -1,6 +1,7 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+import asyncio
 
 
 TOKEN = os.getenv('BOT_TOKEN', '7152066894:AAGkTh2QLFNMSF7Z5dJdfj7IDjcDcDPoKnM')
@@ -130,6 +131,10 @@ questions = [
 ]
 
 
+
+
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [InlineKeyboardButton("Гарик", callback_data='Гарик')],
@@ -216,5 +221,4 @@ async def main() -> None:
 
 if __name__ == '__main__':
     asyncio.run(main())
-
 
