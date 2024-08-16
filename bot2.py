@@ -6,126 +6,107 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 TOKEN = os.getenv('BOT_TOKEN', '7152066894:AAGkTh2QLFNMSF7Z5dJdfj7IDjcDcDPoKnM')
 
 
+
 questions = [
     {
         "question": "1. Какой элемент HTML используется для добавления заголовка страницы? 📑",
         "options": ["<header>", "<title>", "<h1>", "<meta>"],
-        "correct_option_id": 1,
-        "explanation": "Элемент <title> используется для добавления заголовка страницы, который отображается во вкладке браузера."
+        "correct_option_id": 1
     },
     {
         "question": "2. Какой элемент HTML используется для создания гиперссылок? 🔗",
         "options": ["<a>", "<link>", "<button>", "<url>"],
-        "correct_option_id": 0,
-        "explanation": "Элемент <a> (anchor) используется для создания гиперссылок на веб-страницах."
+        "correct_option_id": 0
     },
     {
         "question": "3. Какой атрибут HTML используется для открытия ссылки в новой вкладке? 🆕",
         "options": ["target=\"_self\"", "target=\"_top\"", "target=\"_blank\"", "target=\"_parent\""],
-        "correct_option_id": 2,
-        "explanation": "Атрибут target=\"_blank\" используется для открытия ссылки в новой вкладке или окне браузера."
+        "correct_option_id": 2
     },
     {
         "question": "4. Какой элемент HTML используется для вставки изображения? 🖼",
         "options": ["<img>", "<picture>", "<photo>", "<image>"],
-        "correct_option_id": 0,
-        "explanation": "Элемент <img> используется для вставки изображений на веб-страницу."
+        "correct_option_id": 0
     },
     {
         "question": "5. Что указывает атрибут alt в теге <img>? 📝",
         "options": ["Размер изображения", "URL изображения", "Альтернативный текст для изображения", "Выравнивание изображения"],
-        "correct_option_id": 2,
-        "explanation": "Атрибут alt указывает альтернативный текст для изображения, который отображается, если изображение не может быть загружено."
+        "correct_option_id": 2
     },
     {
         "question": "6. Какой элемент HTML используется для создания списка с маркерами? 📋",
         "options": ["<ul>", "<ol>", "<list>", "<item>"],
-        "correct_option_id": 0,
-        "explanation": "Элемент <ul> (unordered list) используется для создания маркированного списка."
+        "correct_option_id": 0
     },
     {
         "question": "7. Какой элемент HTML используется для создания списка с нумерацией? 🔢",
         "options": ["<ol>", "<ul>", "<list>", "<item>"],
-        "correct_option_id": 0,
-        "explanation": "Элемент <ol> (ordered list) используется для создания нумерованного списка."
+        "correct_option_id": 0
     },
     {
         "question": "8. Какой элемент HTML используется для добавления текста под изображением? 📝",
         "options": ["<figcaption>", "<caption>", "<text>", "<description>"],
-        "correct_option_id": 0,
-        "explanation": "Элемент <figcaption> используется для добавления подписи или описания к изображению внутри элемента <figure>."
+        "correct_option_id": 0
     },
     {
         "question": "9. Какой элемент HTML используется для создания раздела на странице? 🗂",
         "options": ["<section>", "<div>", "<article>", "<header>"],
-        "correct_option_id": 0,
-        "explanation": "Элемент <section> используется для определения раздела в документе, такого как глава, заголовок или группа связанного контента."
+        "correct_option_id": 0
     },
     {
         "question": "10. Какой элемент HTML используется для горизонтальной линии? 🌐",
         "options": ["<hr>", "<line>", "<divider>", "<break>"],
-        "correct_option_id": 0,
-        "explanation": "Элемент <hr> (horizontal rule) используется для вставки горизонтальной линии на веб-страницу."
+        "correct_option_id": 0
     },
     {
         "question": "11. Какое CSS-свойство задает цвет фона элемента? 🌈",
         "options": ["color", "background-color", "border-color", "text-color"],
-        "correct_option_id": 1,
-        "explanation": "Свойство background-color используется для задания цвета фона элемента."
+        "correct_option_id": 1
     },
     {
         "question": "12. Какое CSS-свойство используется для установки шрифта текста? 🔠",
         "options": ["font-size", "font-family", "text-align", "line-height"],
-        "correct_option_id": 1,
-        "explanation": "Свойство font-family используется для указания шрифта или семейства шрифтов для текста."
+        "correct_option_id": 1
     },
     {
         "question": "13. Какое CSS-свойство используется для задания максимальной ширины элемента? 📏",
         "options": ["width", "max-height", "max-width", "height"],
-        "correct_option_id": 2,
-        "explanation": "Свойство max-width используется для задания максимальной ширины элемента."
+        "correct_option_id": 2
     },
     {
         "question": "14. Какое CSS-свойство задает внутренние отступы элемента? ⛓",
         "options": ["margin", "padding", "border", "spacing"],
-        "correct_option_id": 1,
-        "explanation": "Свойство padding используется для задания внутренних отступов элемента."
+        "correct_option_id": 1
     },
     {
         "question": "15. Какое CSS-свойство управляет выравниванием текста? 📝",
         "options": ["text-decoration", "text-align", "font-style", "vertical-align"],
-        "correct_option_id": 1,
-        "explanation": "Свойство text-align используется для управления горизонтальным выравниванием текста."
+        "correct_option_id": 1
     },
     {
         "question": "16. Какое CSS-свойство используется для установки стиля границы элемента? 🖊",
         "options": ["border", "border-width", "border-color", "border-radius"],
-        "correct_option_id": 0,
-        "explanation": "Свойство border используется для установки стиля, ширины и цвета границы элемента."
+        "correct_option_id": 0
     },
     {
         "question": "17. Какое CSS-свойство задает размер шрифта текста? 📏",
         "options": ["font-family", "font-size", "text-align", "margin"],
-        "correct_option_id": 1,
-        "explanation": "Свойство font-size используется для задания размера шрифта текста."
+        "correct_option_id": 1
     },
     {
         "question": "18. Какое CSS-свойство задает отступы между элементами? ⬆️⬇️⬅️➡️",
         "options": ["margin", "padding", "border", "spacing"],
-        "correct_option_id": 0,
-        "explanation": "Свойство margin используется для задания внешних отступов между элементами."
+        "correct_option_id": 0
     },
     {
         "question": "19. Какое CSS-свойство изменяет стиль ссылок при наведении курсора? 🖱",
         "options": ["color", "a:hover", "text-decoration", "border"],
-        "correct_option_id": 1,
-        "explanation": "Псевдокласс a:hover используется для изменения стиля ссылок при наведении курсора."
+        "correct_option_id": 1
     },
     {
         "question": "20. Какой элемент HTML используется для определения основной части документа? 📝",
         "options": ["<main>", "<section>", "<div>", "<article>"],
-        "correct_option_id": 0,
-        "explanation": "Элемент <main> используется для определения основного содержимого документа."
+        "correct_option_id": 0
     }
 ]
 
@@ -146,7 +127,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data['current_question'] = 0
     context.user_data['score'] = 0
     context.user_data['answers'] = []
-    await query.edit_message_text(text=f"Приятно познакомиться, {query.data}! Давай начнем викторину.")
     await send_question(update, context)
 
 async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -165,36 +145,23 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await query.answer()
     selected_option = int(query.data)
     question = questions[context.user_data['current_question']]
-    name = context.user_data.get('name', 'друг')
 
     if selected_option == question['correct_option_id']:
         context.user_data['score'] += 1
-        context.user_data.setdefault('answers', []).append((question['question'], question['options'][selected_option], True, question['explanation']))
-        await query.edit_message_text(
-            text=f"Молодец, {name}! Это правильный ответ! \n\n{question['explanation']}"
-        )
-    else:
-        context.user_data.setdefault('answers', []).append((question['question'], question['options'][selected_option], False, question['explanation']))
-        await query.edit_message_text(
-            text=f"Не расстраивайся, {name}! Ошибки помогают нам учиться. \n\n{question['explanation']}"
-        )
 
     context.user_data['current_question'] += 1
 
     if context.user_data['current_question'] < len(questions):
-        await context.bot.send_message(
-            chat_id=update.effective_user.id,
-            text=f"Давай продолжим, {name}! Следующий вопрос:"
-        )
         await send_question(update, context)
     else:
         score_percentage = (context.user_data['score'] / len(questions)) * 100
         report = "\n".join(
-            [f"Вопрос: {q}\nВаш ответ: {a}\nРезультат: {'Правильно' if r else 'Неправильно'}\nОбъяснение: {e}\n" for q, a, r, e in context.user_data['answers']]
+            [f"Вопрос: {q['question']}\nВаш ответ: {q['options'][int(a)]}\nПравильный ответ: {q['options'][q['correct_option_id']]}\n"
+             for q, a in zip(questions, context.user_data['answers'])]
         )
         await context.bot.send_message(
             chat_id=update.effective_user.id,
-            text=f"Поздравляю, {name}! Ты завершил викторину! \nТвой результат: {score_percentage:.1f} из 100 баллов.\n\nВот твой отчет:\n\n{report}\n\nСпасибо за участие! Если хочешь попробовать еще раз, просто отправь команду /start."
+            text=f"Поздравляю, {context.user_data['name']}! Ты завершил викторину! \nТвой результат: {score_percentage:.1f} из 100 баллов.\n\nВот твой отчет:\n\n{report}\n\nСпасибо за участие! Если хочешь попробовать еще раз, просто отправь команду /start."
         )
 
 def main() -> None:
@@ -208,3 +175,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+
