@@ -128,8 +128,6 @@ questions = [
     }
 ]
 
-
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [InlineKeyboardButton("Гарик", callback_data='Гарик')],
@@ -164,19 +162,21 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     name = context.user_data.get('name', 'друг')
     question = questions[context.user_data['current_question']]
 
-    # Always send the explanation regardless of the answer
-    await context.bot.send_message(
-        chat_id=update.effective_user.id,
-        text=f"Спасибо за ответ, {name}! \n\n{question['explanation']}"
-    )
+    if update.poll_answer.option_ids[0] == question['correct_option_id']:
+        context.user_data['score'] += 1
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=f"Молодец, {name}! Это правильный ответ! \n\n{question['explanation']}"
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=f"Не расстраивайся, {name}! Ошибки помогают нам учиться. \n\n{question['explanation']}"
+        )
 
     context.user_data['current_question'] += 1
 
     if context.user_data['current_question'] < len(questions):
-        await context.bot.send_message(
-            chat_id=update.effective_user.id,
-            text=f"Давай продолжим, {name}! Следующий вопрос:"
-        )
         await send_question(update, context)
     else:
         score_percentage = (context.user_data['score'] / len(questions)) * 100
