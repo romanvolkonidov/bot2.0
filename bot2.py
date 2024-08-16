@@ -5,6 +5,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 
 TOKEN = os.getenv('BOT_TOKEN', '7152066894:AAGkTh2QLFNMSF7Z5dJdfj7IDjcDcDPoKnM')
 
+
 questions = [
     {
         "question": "1. Какой элемент HTML используется для добавления заголовка страницы? 📑",
@@ -128,7 +129,6 @@ questions = [
     }
 ]
 
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [InlineKeyboardButton("Гарик", callback_data='Гарик')],
@@ -145,6 +145,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data['name'] = query.data
     context.user_data['current_question'] = 0
     context.user_data['score'] = 0
+    context.user_data['answers'] = []
     await query.edit_message_text(text=f"Приятно познакомиться, {query.data}! Давай начнем викторину.")
     await send_question(update, context)
 
@@ -160,23 +161,39 @@ async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()
-    selected_option = int(query.data)
+    name = context.user_data.get('name', 'друг')
     question = questions[context.user_data['current_question']]
 
-    if selected_option == question['correct_option_id']:
+    if update.poll_answer.option_ids[0] == question['correct_option_id']:
         context.user_data['score'] += 1
+        context.user_data.setdefault('answers', []).append((question['question'], question['options'][update.poll_answer.option_ids[0]], True, question['explanation']))
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=f"Молодец, {name}! Это правильный ответ! \n\n{question['explanation']}"
+        )
+    else:
+        context.user_data.setdefault('answers', []).append((question['question'], question['options'][update.poll_answer.option_ids[0]], False, question['explanation']))
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=f"Не расстраивайся, {name}! Ошибки помогают нам учиться. \n\n{question['explanation']}"
+        )
 
     context.user_data['current_question'] += 1
 
     if context.user_data['current_question'] < len(questions):
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=f"Давай продолжим, {name}! Следующий вопрос:"
+        )
         await send_question(update, context)
     else:
         score_percentage = (context.user_data['score'] / len(questions)) * 100
+        report = "\n".join(
+            [f"Вопрос: {q}\nВаш ответ: {a}\nРезультат: {'Правильно' if r else 'Неправильно'}\nОбъяснение: {e}\n" for q, a, r, e in context.user_data['answers']]
+        )
         await context.bot.send_message(
             chat_id=update.effective_user.id,
-            text=f"Поздравляю, {context.user_data['name']}! Ты завершил викторину! \nТвой результат: {score_percentage:.1f} из 100 баллов.\n\nСпасибо за участие! Если хочешь попробовать еще раз, просто отправь команду /start."
+            text=f"Поздравляю, {name}! Ты завершил викторину! \nТвой результат: {score_percentage:.1f} из 100 баллов.\n\nВот твой отчет:\n\n{report}\n\nСпасибо за участие! Если хочешь попробовать еще раз, просто отправь команду /start."
         )
 
 def main() -> None:
