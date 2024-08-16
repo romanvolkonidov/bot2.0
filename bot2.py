@@ -9,6 +9,8 @@ TOKEN = os.getenv('BOT_TOKEN', '7152066894:AAGkTh2QLFNMSF7Z5dJdfj7IDjcDcDPoKnM')
 
 
 
+
+
 questions = [
     {
         "question": "1. Какой элемент HTML используется для добавления заголовка страницы? 📑",
@@ -102,8 +104,7 @@ questions = [
     },
     {
         "question": "19. Какое CSS-свойство изменяет стиль ссылок при наведении курсора? 🖱",
-
-"options": ["color", "a:hover", "text-decoration", "border"],
+        "options": ["color", "a:hover", "text-decoration", "border"],
         "correct_option_id": 1
     },
     {
@@ -179,5 +180,6 @@ def main() -> None:
 
     application.run_polling()
 
-if name == 'main':
+if __name__ == '__main__':
     main()
+
