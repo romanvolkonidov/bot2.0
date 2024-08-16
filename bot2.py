@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+TOKEN = '7373179644:AAGqYoumuur1CzrQ8s3I0geTlnj1IvgEHuI'
 
 questions = [
     {"question": "Question 1?", "options": ["Option 1", "Option 2", "Option 3", "Option 4"], "correct_option_id": 0, "explanation": "Explanation for Question 1"},
