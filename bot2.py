@@ -2,7 +2,7 @@ import os
 from telegram import Update, Poll
 from telegram.ext import Application, CommandHandler, PollAnswerHandler, ContextTypes, MessageHandler, filters
 
-TOKEN = '7152066894:AAGkTh2QLFNMSF7Z5dJdfj7IDjcDcDPoKnM'
+TOKEN = os.getenv('BOT_TOKEN', '7373179644:AAGqYoumuur1CzrQ8s3I0geTlnj1IvgEHuI')
 
 questions = [
     {
@@ -132,6 +132,14 @@ questions = [
 
 
 
+
+
+
+
+
+
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Привет! Давай познакомимся. Как тебя зовут?")
     context.user_data['waiting_for_name'] = True
@@ -160,31 +168,28 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     name = context.user_data.get('name', 'друг')
     question = questions[context.user_data['current_question']]
 
-    feedback = "Молодец" if update.poll_answer.option_ids[0] == question['correct_option_id'] else "Не расстраивайся"
-    context.user_data['score'] += 1 if update.poll_answer.option_ids[0] == question['correct_option_id'] else 0
+    if update.poll_answer.option_ids[0] == question['correct_option_id']:
+        context.user_data['score'] += 1
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=f"Молодец, {name}! Это правильный ответ!"
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=f"Не расстраивайся, {name}! Ошибки помогают нам учиться."
+        )
 
     context.user_data['current_question'] += 1
 
     if context.user_data['current_question'] < len(questions):
-        next_question = questions[context.user_data['current_question']]
-        message = (
-            f"{feedback}, {name}! "
-            f"{'Это правильный ответ!' if update.poll_answer.option_ids[0] == question['correct_option_id'] else 'Ошибки помогают нам учиться.'}\n\n"
-            f"{question['explanation']}\n\n"
-            f"Давай продолжим. Вот следующий вопрос:\n\n{next_question['question']}"
-        )
-        await context.bot.send_message(chat_id=update.effective_user.id, text=message)
         await send_question(update, context)
     else:
         score_percentage = (context.user_data['score'] / len(questions)) * 100
-        message = (
-            f"{feedback}, {name}! "
-            f"{'Это правильный ответ!' if update.poll_answer.option_ids[0] == question['correct_option_id'] else 'Ошибки помогают нам учиться.'}\n\n"
-            f"{question['explanation']}\n\n"
-            f"Поздравляю! Ты завершил викторину! \nТвой результат: {score_percentage:.1f} из 100 баллов.\n\n"
-            f"Спасибо за участие! Если хочешь попробовать еще раз, просто отправь команду /start."
+        await context.bot.send_message(
+            chat_id=update.effective_user.id,
+            text=f"Поздравляю, {name}! Ты завершил викторину! \nТвой результат: {score_percentage:.1f} из 100 баллов.\n\nСпасибо за участие! Если хочешь попробовать еще раз, просто отправь команду /start."
         )
-        await context.bot.send_message(chat_id=update.effective_user.id, text=message)
 
 def main() -> None:
     application = Application.builder().token(TOKEN).build()
@@ -195,3 +200,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+
