@@ -161,20 +161,21 @@ async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    name = context.user_data.get('name', 'друг')
+    query = update.callback_query
+    await query.answer()
+    selected_option = int(query.data)
     question = questions[context.user_data['current_question']]
+    name = context.user_data.get('name', 'друг')
 
-    if update.poll_answer.option_ids[0] == question['correct_option_id']:
+    if selected_option == question['correct_option_id']:
         context.user_data['score'] += 1
-        context.user_data.setdefault('answers', []).append((question['question'], question['options'][update.poll_answer.option_ids[0]], True, question['explanation']))
-        await context.bot.send_message(
-            chat_id=update.effective_user.id,
+        context.user_data.setdefault('answers', []).append((question['question'], question['options'][selected_option], True, question['explanation']))
+        await query.edit_message_text(
             text=f"Молодец, {name}! Это правильный ответ! \n\n{question['explanation']}"
         )
     else:
-        context.user_data.setdefault('answers', []).append((question['question'], question['options'][update.poll_answer.option_ids[0]], False, question['explanation']))
-        await context.bot.send_message(
-            chat_id=update.effective_user.id,
+        context.user_data.setdefault('answers', []).append((question['question'], question['options'][selected_option], False, question['explanation']))
+        await query.edit_message_text(
             text=f"Не расстраивайся, {name}! Ошибки помогают нам учиться. \n\n{question['explanation']}"
         )
 
