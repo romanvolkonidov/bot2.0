@@ -1,6 +1,6 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, PollAnswerHandler
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, PollAnswerHandler, ContextTypes
 
 
 TOKEN = os.getenv('BOT_TOKEN', '7152066894:AAGkTh2QLFNMSF7Z5dJdfj7IDjcDcDPoKnM')
@@ -128,6 +128,7 @@ questions = [
     }
 ]
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [InlineKeyboardButton("Гарик", callback_data='Гарик')],
@@ -164,15 +165,6 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     if update.poll_answer.option_ids[0] == question['correct_option_id']:
         context.user_data['score'] += 1
-        await context.bot.send_message(
-            chat_id=update.effective_user.id,
-            text=f"Молодец, {name}! Это правильный ответ! \n\n{question['explanation']}"
-        )
-    else:
-        await context.bot.send_message(
-            chat_id=update.effective_user.id,
-            text=f"Не расстраивайся, {name}! Ошибки помогают нам учиться. \n\n{question['explanation']}"
-        )
 
     context.user_data['current_question'] += 1
 
