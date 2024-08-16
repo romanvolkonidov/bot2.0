@@ -128,34 +128,24 @@ questions = [
 ]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    keyboard = [
-        [InlineKeyboardButton("Гарик", callback_data='Гарик')],
-        [InlineKeyboardButton("Антонина", callback_data='Антонина')],
-        [InlineKeyboardButton("Сара", callback_data='Сара')],
-        [InlineKeyboardButton("Мэри", callback_data='Мэри')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('Как вас зовут?', reply_markup=reply_markup)
-
-async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()
-    context.user_data['name'] = query.data
     context.user_data['current_question'] = 0
     context.user_data['score'] = 0
     context.user_data['answers'] = []
+    context.user_data['name'] = update.effective_user.first_name
+
     await send_question(update, context)
 
 async def send_question(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    question = questions[context.user_data['current_question']]
-    options = question['options']
-    keyboard = [[InlineKeyboardButton(option, callback_data=str(i))] for i, option in enumerate(options)]
+    current_question = context.user_data['current_question']
+    question = questions[current_question]
+
+    keyboard = [
+        [InlineKeyboardButton(option, callback_data=str(i)) for i, option in enumerate(question['options'])]
+    ]
+
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=question['question'],
-        reply_markup=reply_markup
-    )
+
+    await update.message.reply_text(question['question'], reply_markup=reply_markup)
 
 async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -188,7 +178,6 @@ def main() -> None:
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(button, pattern='^(Гарик|Антонина|Сара|Мэри)$'))
     application.add_handler(CallbackQueryHandler(handle_answer, pattern='^[0-9]+$'))
 
     application.run_polling()
