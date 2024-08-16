@@ -118,7 +118,7 @@ def main() -> None:
     application.run_polling()
 
 if __name__ == '__main__':
-    main()м
+    main()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Привет! Давай познакомимся. Как тебя зовут?")
