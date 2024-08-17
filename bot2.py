@@ -270,7 +270,7 @@ async def choose_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Привет, {context.user_data['name']}! Какое повторение ты хочешь пройти?",
+        text=f" Какое повторение ты хочешь пройти?",
         reply_markup=reply_markup
     )
 
@@ -280,7 +280,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     
     if query.data.startswith('name:'):
         context.user_data['name'] = query.data.split(':')[1]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Привет, {context.user_data['name']}! Сейчас выбери повторение.")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Привет, {context.user_data['name']}!")
         await choose_quiz(update, context)
     elif query.data.startswith('quiz:'):
         context.user_data['quiz'] = query.data.split(':')[1]
