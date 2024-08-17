@@ -1,3 +1,4 @@
+
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
@@ -270,7 +271,7 @@ async def choose_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Привет, {context.user_data['name']}! Какое повторение ты хочешь пройти?",
+        text=f" Какое повторение ты хочешь пройти?",
         reply_markup=reply_markup
     )
 
@@ -280,7 +281,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     
     if query.data.startswith('name:'):
         context.user_data['name'] = query.data.split(':')[1]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Привет, {context.user_data['name']}! Сейчас выбери повторение.")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Привет, {context.user_data['name']}!👋🏿👋🏿")
         await choose_quiz(update, context)
     elif query.data.startswith('quiz:'):
         context.user_data['quiz'] = query.data.split(':')[1]
@@ -344,18 +345,18 @@ async def send_final_report(update: Update, context: ContextTypes.DEFAULT_TYPE) 
          for q in context.user_data['answers']]
     )
     
-      if score_percentage == 100:
+    if score_percentage == 100:
         comment = "Ты отлично справился, все ответы правильные! Это очень круто!👍🏿👍🏿👍🏿"
     elif score_percentage >= 75:
         comment = f"Хорошая работа! Ты знаешь тему '{context.user_data['quiz']}' на довольно высоком уровне.👍🏿👍🏿"
     elif score_percentage >= 50:
         comment = "Неплохо! Есть еще что-то, над чем стоит поработать, но ты уже многого достиг.👍🏿"
     else:
-        comment = "Ты справился! Не расстраивайся, если что-то не получилось. Главное — учиться на ошибках и продолжать двигаться вперед. Be courageous and strong💪🏿"
+        comment = "Ты справился! Не расстраивайся, если что-то не получилось. Just be corageous and very strong💪🏿"
 
     congratulation = f"Поздравляю, {context.user_data['name']}! Ты завершил повторение '{context.user_data['quiz']}'! Твой результат: {score_percentage:.1f} из 100 баллов."
     
-    final_message = f"{congratulation}\n\n{report}\n\n{comment}\n\nСпасибо за участие! Если хочешь попробовать еще раз🔁 или пройти другое повторение, просто отправь команду /start. Желаю успехов!"
+    final_message = f"{congratulation}\n\n{report}\n\n{comment}\n\nСпасибо за участие! Если хочешь попробовать еще раз🔄 или пройти другое повторение, просто отправь команду /start. Желаю успехов!"
 
     # Send the final report to the same chat where the quiz was conducted
     await context.bot.send_message(
