@@ -1,7 +1,6 @@
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-import asyncio
 
 TOKEN = os.getenv('BOT_TOKEN', '7152066894:AAGkTh2QLFNMSF7Z5dJdfj7IDjcDcDPoKnM')
 
@@ -250,7 +249,8 @@ cafe_menu_questions = [
         "explanation": "Элемент <main> определяет основную часть документа. Это как главная комната в доме - здесь находится самое важное содержимое страницы."
     }
 ]
-# (cat_photo_questions and cafe_menu_questions remain unchanged)
+
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
@@ -346,37 +346,4 @@ async def send_final_report(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     
     if score_percentage == 100:
         comment = "Ты отлично справился, все ответы правильные! Это очень круто!"
-    elif score_percentage >= 75:
-        comment = f"Хорошая работа! Ты знаешь тему '{context.user_data['quiz']}' на довольно высоком уровне."
-    elif score_percentage >= 50:
-        comment = "Неплохо! Есть еще что-то, над чем стоит поработать, но ты уже многого достиг."
-    else:
-        comment = "Ты справился! Не расстраивайся, если что-то не получилось. Главное — учиться на ошибках и продолжать двигаться вперед."
-
-    congratulation = f"Поздравляю, {context.user_data['name']}! Ты завершил повторение '{context.user_data['quiz']}'! Твой результат: {score_percentage:.1f} из 100 баллов."
-    
-    final_message = f"{congratulation}\n\n{report}\n\n{comment}\n\nСпасибо за участие! Если хочешь попробовать еще раз или пройти другое повторение, просто отправь команду /start. Желаю успехов!"
-
-    # Send the final report in chunks to avoid hitting message size limits
-    max_message_length = 4096
-    for i in range(0, len(final_message), max_message_length):
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=final_message[i:i+max_message_length]
-        )
-        await asyncio.sleep(0.1)  # Small delay between messages to avoid rate limiting
-
-async def main() -> None:
-    application = Application.builder().token(TOKEN).build()
-
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(button, pattern='^name:'))
-    application.add_handler(CallbackQueryHandler(button, pattern='^quiz:'))
-    application.add_handler(CallbackQueryHandler(handle_answer, pattern='^[0-9]+:[0-9]+$'))
-
-    await application.initialize()
-    await application.start()
-    await application.run_polling()
-
-if __name__ == '__main__':
-    asyncio.run(main())
+    el
