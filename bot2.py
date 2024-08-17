@@ -344,6 +344,34 @@ async def send_final_report(update: Update, context: ContextTypes.DEFAULT_TYPE) 
          for q in context.user_data['answers']]
     )
     
-    if score_percentage == 100:
+      if score_percentage == 100:
         comment = "Ты отлично справился, все ответы правильные! Это очень круто!"
-    el
+    elif score_percentage >= 75:
+        comment = f"Хорошая работа! Ты знаешь тему '{context.user_data['quiz']}' на довольно высоком уровне."
+    elif score_percentage >= 50:
+        comment = "Неплохо! Есть еще что-то, над чем стоит поработать, но ты уже многого достиг."
+    else:
+        comment = "Ты справился! Не расстраивайся, если что-то не получилось. Главное — учиться на ошибках и продолжать двигаться вперед."
+
+    congratulation = f"Поздравляю, {context.user_data['name']}! Ты завершил повторение '{context.user_data['quiz']}'! Твой результат: {score_percentage:.1f} из 100 баллов."
+    
+    final_message = f"{congratulation}\n\n{report}\n\n{comment}\n\nСпасибо за участие! Если хочешь попробовать еще раз или пройти другое повторение, просто отправь команду /start. Желаю успехов!"
+
+    # Send the final report to the same chat where the quiz was conducted
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=final_message
+    )
+
+def main() -> None:
+    application = Application.builder().token(TOKEN).build()
+
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(button, pattern='^name:'))
+    application.add_handler(CallbackQueryHandler(button, pattern='^quiz:'))
+    application.add_handler(CallbackQueryHandler(handle_answer, pattern='^[0-9]+:[0-9]+$'))
+
+    application.run_polling()
+
+if __name__ == '__main__':
+    main()
