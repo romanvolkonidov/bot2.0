@@ -294,7 +294,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         else:
             context.user_data['questions'] = cafe_menu_questions
 
-        greeting = f"Отлично! Давай начнем повторение '{context.user_data['quiz']}'. Удачи!"
+        greeting = f"Отлично! Давай начнем повторение '{context.user_data['quiz']}'. Успехов!"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=greeting)
         await send_question(update, context)
     else:
