@@ -280,7 +280,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     
     if query.data.startswith('name:'):
         context.user_data['name'] = query.data.split(':')[1]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Привет, {context.user_data['name']}!")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Привет, {context.user_data['name']}!👋🏿👋🏿")
         await choose_quiz(update, context)
     elif query.data.startswith('quiz:'):
         context.user_data['quiz'] = query.data.split(':')[1]
@@ -345,11 +345,11 @@ async def send_final_report(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     )
     
     if score_percentage == 100:
-        comment = "Ты отлично справился, все ответы правильные! Это очень круто!"
+        comment = "Ты отлично справился, все ответы правильные! Это очень круто!👍🏿👍🏿"
     elif score_percentage >= 75:
-        comment = f"Хорошая работа! Ты знаешь тему '{context.user_data['quiz']}' на довольно высоком уровне."
+        comment = f"Хорошая работа! Ты знаешь тему '{context.user_data['quiz']}' на довольно высоком уровне.👍🏿"
     elif score_percentage >= 50:
-        comment = "Неплохо! Есть еще что-то, над чем стоит поработать, но ты уже многого достиг."
+        comment = "Неплохо! Есть еще что-то, над чем стоит поработать, но ты уже многого достиг. Just be corageous and very strong💪🏿"
     else:
         comment = "Ты справился! Не расстраивайся, если что-то не получилось. Главное — учиться на ошибках и продолжать двигаться вперед."
 
