@@ -258,8 +258,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [InlineKeyboardButton("Гарик", callback_data='name:Гарик')],
         [InlineKeyboardButton("Антонина", callback_data='name:Антонина')],
         [InlineKeyboardButton("Сара", callback_data='name:Сара')],
-        [InlineKeyboardButton("Мэри", callback_data='name:Мэри')]
-         [InlineKeyboardButton("Трофим", callback_data='name:Мэри')]
+        [InlineKeyboardButton("Мэри", callback_data='name:Мэри')],
+        [InlineKeyboardButton("Трофим", callback_data='name:Трофим')],
+         [InlineKeyboardButton("Настя", callback_data='name:Настя')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Привет! Как тебя зовут?', reply_markup=reply_markup)
