@@ -1,11 +1,19 @@
-
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+import logging
 
-TOKEN = os.getenv('BOT_TOKEN', '7152066894:AAGkTh2QLFNMSF7Z5dJdfj7IDjcDcDPoKnM')
+# Enable logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
-cat_photo_questions = [
+TOKEN = os.getenv('BOT_TOKEN', '7373179644:AAGqYoumuur1CzrQ8s3I0geTlnj1IvgEHuI')
+
+# Questions are here
+cat_photo_questions = cat_photo_questions = [
     {
         "question": "1. Какой элемент используется для добавления заголовка страницы? 📑",
         "options": ["<header>", "<h1>", "<title>", "<h2>"],
@@ -127,6 +135,7 @@ cat_photo_questions = [
         "explanation": "Тег <a> используется для создания ссылки на внешние ресурсы в нижнем колонтитуле. Это как указатель на другие интересные места - он позволяет пользователям перейти на другие связанные страницы или сайты."
     }
 ]
+
 
 cafe_menu_questions = [
     {
@@ -251,8 +260,6 @@ cafe_menu_questions = [
     }
 ]
 
-
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [InlineKeyboardButton("Гарик", callback_data='name:Гарик')],
@@ -271,12 +278,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def choose_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [
         [InlineKeyboardButton("Cat Photo🐱", callback_data='quiz:Cat Photo')],
-        [InlineKeyboardButton("Cafe Menu☕️", callback_data='quiz:Cafe Menu')]
+        [InlineKeyboardButton("Cafe Menu☕️", callback_data='quiz:Cafe Menu')],
+        [InlineKeyboardButton("Результаты", callback_data='results')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f" Какое повторение ты хочешь пройти?",
+        text=f"Какое повторение ты хочешь пройти?",
         reply_markup=reply_markup
     )
 
@@ -284,6 +292,8 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
     
+    logger.info(f"Button pressed with data: {query.data}")
+
     if query.data.startswith('name:'):
         context.user_data['name'] = query.data.split(':')[1]
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Привет, {context.user_data['name']}!👋🏿👋🏿")
@@ -302,6 +312,8 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         greeting = f"Отлично! Давай начнем повторение '{context.user_data['quiz']}'. Успехов!"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=greeting)
         await send_question(update, context)
+    elif query.data == 'results':
+        await show_results(update, context)
     else:
         await handle_answer(update, context)
 
@@ -343,6 +355,34 @@ async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     else:
         await send_final_report(update, context)
 
+async def show_results(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.effective_user.id
+    if 'results' not in context.user_data or user_id not in context.user_data['results']:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="У вас пока нет результатов. Пройдите хотя бы один тест."
+        )
+        return
+
+    keyboard = [[InlineKeyboardButton(quiz, callback_data=f"show_result:{quiz}")] for quiz in context.user_data['results'][user_id]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Выберите тест, для которого хотите увидеть результаты:",
+        reply_markup=reply_markup
+    )
+
+async def show_result(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    quiz = query.data.split(':')[1]
+    user_id = update.effective_user.id
+    score = context.user_data['results'][user_id][quiz]
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"Ваш результат для теста '{quiz}': {score:.1f} из 100 баллов."
+    )
+
 async def send_final_report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     score_percentage = (context.user_data['score'] / len(context.user_data['questions'])) * 100
     report = "\n\n".join(
@@ -363,6 +403,14 @@ async def send_final_report(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     
     final_message = f"{congratulation}\n\n{report}\n\n{comment}\n\nСпасибо за участие! Если хочешь попробовать еще раз🔄 или пройти другое повторение, просто отправь команду /start. Желаю успехов!"
 
+    # Save the latest result for the quiz
+    user_id = update.effective_user.id
+    if 'results' not in context.user_data:
+        context.user_data['results'] = {}
+    if user_id not in context.user_data['results']:
+        context.user_data['results'][user_id] = {}
+    context.user_data['results'][user_id][context.user_data['quiz']] = score_percentage
+
     # Send the final report to the same chat where the quiz was conducted
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -375,9 +423,12 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button, pattern='^name:'))
     application.add_handler(CallbackQueryHandler(button, pattern='^quiz:'))
+    application.add_handler(CallbackQueryHandler(button, pattern='^results$'))
     application.add_handler(CallbackQueryHandler(handle_answer, pattern='^[0-9]+:[0-9]+$'))
+    application.add_handler(CallbackQueryHandler(show_result, pattern='^show_result:'))
 
     application.run_polling()
 
 if __name__ == '__main__':
+    main()
     main()
