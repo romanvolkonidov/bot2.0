@@ -1,0 +1,17 @@
+key.json
+
+# Ignore all .json files in the root directory
+/*.json
+
+# Ignore all files in a "secrets" directory
+secrets/
+
+# Ignore log files
+*.log
+
+# Ignore node_modules directory
+node_modules/
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
