@@ -1,0 +1,297 @@
+import logging
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
+from googleapiclient.discovery import build
+from google.oauth2.service_account import Credentials
+import datetime
+
+
+# Replace with your actual token and calendar ID
+TOKEN = '7214117585:AAHmN7Sjl12RVnj19fB-atkG19R8UmKxo-Q'
+CALENDAR_ID = 'romanvolkonidov@gmail.com'
+
+
+
+# Logging configuration
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+
+user_data = {}  # Temporary user data storage
+
+def get_free_slots(service, calendar_ids, start_date, end_date):
+    body = {
+        "timeMin": start_date.isoformat() + "Z",
+        "timeMax": end_date.isoformat() + "Z",
+        "timeZone": "Europe/Moscow",
+        "items": [{"id": calendar_id} for calendar_id in calendar_ids]
+    }
+    
+    free_busy_request = service.freebusy().query(body=body).execute()
+    
+    all_slots = []
+    current_date = start_date
+    while current_date <= end_date:
+        if current_date.weekday() != 6:  # Exclude Sundays (6 represents Sunday)
+            for hour in range(9, 21):  # 9 AM to 9 PM
+                slot_start = current_date.replace(hour=hour, minute=0, second=0, microsecond=0)
+                slot_end = slot_start + datetime.timedelta(hours=1)
+                all_slots.append((slot_start, slot_end))
+        current_date += datetime.timedelta(days=1)
+    
+    free_slots = []
+    for slot in all_slots:
+        if all(not any(slot[0] < datetime.datetime.fromisoformat(busy["end"]).replace(tzinfo=None) and
+                       slot[1] > datetime.datetime.fromisoformat(busy["start"]).replace(tzinfo=None)
+                       for busy in free_busy_request["calendars"][calendar_id]["busy"])
+               for calendar_id in calendar_ids):
+            free_slots.append(slot)
+    
+    return free_slots
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Английский язык", callback_data='subject_Английский')],
+        [InlineKeyboardButton("Программирование", callback_data='subject_Программирование')],
+    ])
+    await update.message.reply_text("Добро пожаловать в систему бронирования уроков! Выберите предмет для урока:", reply_markup=reply_markup)
+
+async def select_availability(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    subject = update.callback_query.data.split('_')[1]
+    user_data[update.callback_query.from_user.id] = {'subject': subject}
+    
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("На этой неделе", callback_data='availability_this_week')],
+        [InlineKeyboardButton("На следующей неделе", callback_data='availability_next_week')],
+        [InlineKeyboardButton("Выбрать дату", callback_data='availability_specific_date')],
+    ])
+    await update.callback_query.message.reply_text(f"Вы выбрали {subject}. Когда вы хотите провести урок?", reply_markup=reply_markup)
+
+async def select_duration(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    availability = update.callback_query.data.split('_')[1]
+    user_data[update.callback_query.from_user.id]['availability'] = availability
+    
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("30 минут", callback_data='duration_30')],
+        [InlineKeyboardButton("45 минут", callback_data='duration_45')],
+        [InlineKeyboardButton("60 минут", callback_data='duration_60')],
+    ])
+    await update.callback_query.message.reply_text("Какую продолжительность урока вы предпочитаете?", reply_markup=reply_markup)
+
+async def check_availability(update: Update, context: ContextTypes.DEFAULT_TYPE, week_offset=0) -> None:
+    duration = user_data[update.callback_query.from_user.id].get('duration')
+    if duration is None:
+        duration = int(update.callback_query.data.split('_')[1])
+        user_data[update.callback_query.from_user.id]['duration'] = duration
+    await update.callback_query.message.reply_text("Пожалуйста, подождите. Получаем актуальную информацию о свободных слотах...")
+
+    credentials = Credentials.from_service_account_file('key.json')
+    service = build('calendar', 'v3', credentials=credentials)
+
+    # Ensure the start_date is Monday
+    start_date = datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(weeks=week_offset)
+    start_date -= datetime.timedelta(days=start_date.weekday())  # Move to the previous Monday if not already Monday
+    end_date = start_date + datetime.timedelta(days=6)  # End date is Sunday of the same week
+
+    calendar_ids = [
+        'romanvolkonidov@gmail.com',
+        'p8simije0nhss305jf5qak5sm0@group.calendar.google.com',
+        'o6bemnc7uc56hipv6t6lntccq4@group.calendar.google.com'
+    ]
+
+    free_slots = get_free_slots(service, calendar_ids, start_date, end_date)
+
+    if not free_slots:
+        await update.callback_query.message.reply_text("К сожалению, нет доступных слотов на ближайшее время.")
+        return
+
+    slot_buttons = []
+    for slot_start, slot_end in free_slots:
+        slot_date = slot_start.strftime('%Y-%m-%d')
+        slot_time = slot_start.strftime('%H:%M')
+        slot_end_time = (slot_start + datetime.timedelta(minutes=duration)).strftime('%H:%M')
+        slot_buttons.append([InlineKeyboardButton(
+            f"{slot_date}, {slot_time}-{slot_end_time}",
+            callback_data=f'book_{slot_date}_{slot_time}'
+        )])
+
+    navigation_buttons = [
+        InlineKeyboardButton("Назад", callback_data=f'navigate_week_{week_offset - 1}'),
+        InlineKeyboardButton("Вперед", callback_data=f'navigate_week_{week_offset + 1}')
+    ]
+
+    reply_markup = InlineKeyboardMarkup(slot_buttons[:10] + [navigation_buttons])  # Limit to 10 slots to avoid message size limit
+    await update.callback_query.message.reply_text(
+        f"Вот доступные даты и время для урока продолжительностью {duration} минут:",
+        reply_markup=reply_markup
+    )
+
+async def book_slot(update: Update, context: ContextTypes.DEFAULT_TYPE, date: str, time: str) -> None:
+    user_id = update.callback_query.from_user.id
+    user_data[user_id]['slot'] = f"{date}T{time}:00+03:00"
+    await update.callback_query.message.reply_text(f"Вы выбрали слот: {date}, {time}. Пожалуйста, введите ваше имя:")
+    return "awaiting_name"
+
+async def receive_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    user_data[user_id]['name'] = update.message.text
+    await update.message.reply_text(f"Спасибо, {update.message.text}! Пожалуйста, введите ваш контактный телефон:")
+    return "awaiting_contact"
+
+async def receive_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    user_data[user_id]['contact'] = update.message.text
+    
+    # Ask for special requests with buttons
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Ничего особенного", callback_data='no_special_requests')]
+    ])
+    
+    await update.message.reply_text("Есть ли конкретные темы или особые пожелания, которые вы хотели бы обсудить на уроке? Их можно написать ниже", reply_markup=reply_markup)
+    return "awaiting_topics"
+
+async def receive_topics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.callback_query.from_user.id
+    
+    # Check if the user pressed the "Ничего особенного" button
+    if update.callback_query.data == 'no_special_requests':
+        user_data[user_id]['topics'] = "Нет особых пожеланий"
+        await update.callback_query.message.reply_text("Вы выбрали: Ничего особенного.")
+    elif update.callback_query.data == 'input_special_requests':
+        await update.callback_query.message.reply_text("Пожалуйста, введите ваш запрос:")
+        return "awaiting_custom_request"
+    
+    # Provide booking summary
+    summary = (
+        f"Давайте проверим детали вашей записи:\n"
+        f"Предмет: {user_data[user_id]['subject']}\n"
+        f"Дата: {user_data[user_id]['slot'][:10]}\n"
+        f"Время: {user_data[user_id]['slot'][11:16]}\n"
+        f"Имя: {user_data[user_id]['name']}\n"
+        f"Контакт: {user_data[user_id]['contact']}\n"
+        f"Темы: {user_data[user_id]['topics']}\n"
+    )
+    
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Да", callback_data='confirm_yes')],
+        [InlineKeyboardButton("Нет", callback_data='confirm_no')]
+    ])
+    
+    await update.callback_query.message.reply_text(summary + "Все верно?", reply_markup=reply_markup)
+    return "awaiting_confirmation"
+
+async def receive_custom_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    user_data[user_id]['topics'] = update.message.text
+    
+    # Provide booking summary
+    summary = (
+        f"Давайте проверим детали вашей записи:\n"
+        f"Предмет: {user_data[user_id]['subject']}\n"
+        f"Дата: {user_data[user_id]['slot'][:10]}\n"
+        f"Время: {user_data[user_id]['slot'][11:16]}\n"
+        f"Имя: {user_data[user_id]['name']}\n"
+        f"Контакт: {user_data[user_id]['contact']}\n"
+        f"Темы: {user_data[user_id]['topics']}\n"
+    )
+    
+    reply_markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Да", callback_data='confirm_yes')],
+        [InlineKeyboardButton("Нет", callback_data='confirm_no')]
+    ])
+    
+    await update.message.reply_text(summary + "Все верно?", reply_markup=reply_markup)
+    return "awaiting_confirmation"
+
+async def confirm_booking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.callback_query.from_user.id
+    logging.info(f"Confirm booking called for user {user_id} with data {update.callback_query.data}")
+
+    if update.callback_query.data == 'confirm_yes':
+        success = await create_event(user_data[user_id])
+        if success:
+            await update.callback_query.message.reply_text(f"Ваш урок на {user_data[user_id]['slot'][:10]} в {user_data[user_id]['slot'][11:16]} успешно забронирован!")
+        else:
+            await update.callback_query.message.reply_text("К сожалению, не удалось создать запись. Пожалуйста, попробуйте ещё раз или обратитесь в службу поддержки.")
+    else:
+        await update.callback_query.message.reply_text("Бронирование отменено.")
+
+    del user_data[user_id]
+
+async def create_event(user_info: dict) -> bool:
+    try:
+        credentials = Credentials.from_service_account_file('key.json')
+        service = build('calendar', 'v3', credentials=credentials)
+        start_time = user_info['slot']
+        duration = user_info['duration']  # Get the duration from user data
+        end_time = (datetime.datetime.fromisoformat(start_time[:-6]) + datetime.timedelta(minutes=duration)).isoformat() + '+03:00'  # Use the correct duration
+        event = {
+            'summary': f'Урок по {user_info["subject"]}',
+            'start': {
+                'dateTime': start_time,
+                'timeZone': 'Europe/Moscow',
+            },
+            'end': {
+                'dateTime': end_time,
+                'timeZone': 'Europe/Moscow',
+            },
+            'description': f'Имя: {user_info["name"]}\nКонтакт: {user_info["contact"]}\nТемы: {user_info["topics"]}',
+        }
+        service.events().insert(calendarId=CALENDAR_ID, body=event).execute()
+        return True
+    except Exception as e:
+        logging.error(f"Ошибка при создании события: {e}")
+        return False
+
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query_data = update.callback_query.data
+    user_id = update.callback_query.from_user.id
+
+    if query_data.startswith('subject_'):
+        await select_availability(update, context)
+    elif query_data.startswith('availability_'):
+        await select_duration(update, context)
+    elif query_data.startswith('duration_'):
+        await check_availability(update, context)
+    elif query_data.startswith('book_'):
+        date, time = query_data.split('_')[1:3]
+        await book_slot(update, context, date, time)
+    elif query_data.startswith('navigate_week_'):
+        week_offset = int(query_data.split('_')[2])
+        await check_availability(update, context, week_offset)
+    elif query_data in ['no_special_requests', 'input_special_requests']:
+        await receive_topics(update, context)
+    elif query_data in ['confirm_yes', 'confirm_no']:
+        await confirm_booking(update, context)
+    else:
+        await update.callback_query.message.reply_text("Неизвестный запрос. Попробуйте начать заново командой /start.")
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    if user_id in user_data:
+        if 'slot' in user_data[user_id] and 'name' not in user_data[user_id]:
+            await receive_name(update, context)
+        elif 'contact' not in user_data[user_id]:
+            await receive_contact(update, context)
+        elif 'topics' not in user_data[user_id]:
+            if update.message.text.lower() == "ничего особенного":
+                user_data[user_id]['topics'] = "Нет особых пожеланий"
+                await receive_topics(update, context)
+            else:
+                await receive_custom_request(update, context)
+        elif 'confirmation' not in user_data[user_id]:
+            if update.message.text.lower() == "да":
+                await confirm_booking(update, context)
+            else:
+                await update.message.reply_text("Бронирование отменено.")
+                del user_data[user_id]  # Clean up user data
+    else:
+        await update.message.reply_text("Произошла ошибка. Попробуйте начать заново, отправив команду /start.")
+
+def main() -> None:
+    application = ApplicationBuilder().token(TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(handle_callback))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    application.run_polling()
+
+if __name__ == '__main__':
+    main()
