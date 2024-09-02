@@ -10,7 +10,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-TOKEN = os.getenv('BOT_TOKEN', '7539049313:AAGDQjwhDshcf0fDQL5pqzOZ233zBdLnEds')
+TOKEN = os.getenv('BOT_TOKEN', '7152066894:AAH8ISIA8oCkejF00dDc1UDCndplIdqkHZQ')
 
 # Questions are here
 cat_photo_questions = cat_photo_questions = [
